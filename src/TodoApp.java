@@ -5,90 +5,130 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 public class TodoApp extends Application {
-    // ListView variables for each stage of todo items
     private ListView<String> todoList;
     private ListView<String> inProgressList;
     private ListView<String> doneList;
 
-    // ObservableLists hold the actual data displayed in the ListViews
     private ObservableList<String> todos = FXCollections.observableArrayList();
     private ObservableList<String> inProgress = FXCollections.observableArrayList();
     private ObservableList<String> done = FXCollections.observableArrayList();
 
     public static void main(String[] args) {
-        launch(args); // Launches the JavaFX application
+        launch(args);
     }
-    // The main entry point for JavaFX applications
+
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Simple Todo App");
+        primaryStage.setTitle("My ToDo application");
+
+        // Initialize with sample data
+        todos.addAll("Todo 10", "Todo 11", "Todo 12", "New Todo Item");
+        inProgress.addAll("Todo 6", "Todo 8", "Todo 9");
+        done.addAll("Todo 1", "Todo 4", "Todo 3", "Todo 5");
 
         // Create ListViews
         todoList = new ListView<>(todos);
         inProgressList = new ListView<>(inProgress);
         doneList = new ListView<>(done);
 
-        todoList.setEditable(true);         // ListView for "Todo" items
-        inProgressList.setEditable(true);   // ListView for "In Progress" items
-        doneList.setEditable(true);         // ListView for "Done" items
+        todoList.setPrefSize(200, 300);
+        inProgressList.setPrefSize(200, 300);
+        doneList.setPrefSize(200, 300);
 
-        // Make ListViews editable so the user can change the text directly
-        todoList.setCellFactory(TextFieldListCell.forListView());
-        inProgressList.setCellFactory(TextFieldListCell.forListView());
-        doneList.setCellFactory(TextFieldListCell.forListView());
+        // Create column headers
+        Label todoHeader = new Label("ToDos");
+        Label progressHeader = new Label("In progress");
+        Label doneHeader = new Label("Done");
 
-        // Buttons
-        Button addTodoBtn = new Button("Add Todo");
-        addTodoBtn.setOnAction(e -> addTodo());
+        todoHeader.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        progressHeader.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        doneHeader.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
-        Button moveRightBtn = new Button("→");
-        Button moveLeftBtn = new Button("←");
+        // Create buttons between ToDos and In Progress
+        Button moveToProgressBtn = new Button(">");
+        Button moveBackToTodoBtn = new Button("<");
+        moveToProgressBtn.setPrefSize(40, 30);
+        moveBackToTodoBtn.setPrefSize(40, 30);
 
-        moveRightBtn.setOnAction(e -> moveRight());
-        moveLeftBtn.setOnAction(e -> moveLeft());
+        VBox todoToProgressBtns = new VBox(5, moveToProgressBtn, moveBackToTodoBtn);
+        todoToProgressBtns.setAlignment(Pos.CENTER);
 
-        // Layout using VBox (vertical box) and HBox (Horizontal box)
-        VBox todoBox = new VBox(10, new Label("Todos"), todoList);
-        VBox progressBox = new VBox(10, new Label("In Progress"), inProgressList);
-        VBox doneBox = new VBox(10, new Label("Done"), doneList);
+        // Create buttons between In Progress and Done
+        Button moveToDoneBtn = new Button(">");
+        Button moveBackToProgressBtn = new Button("<");
+        moveToDoneBtn.setPrefSize(40, 30);
+        moveBackToProgressBtn.setPrefSize(40, 30);
 
-        // Center the items in each VBox
-        todoBox.setAlignment(Pos.CENTER);
-        progressBox.setAlignment(Pos.CENTER);
-        doneBox.setAlignment(Pos.CENTER);
+        VBox progressToDoneBtns = new VBox(5, moveToDoneBtn, moveBackToProgressBtn);
+        progressToDoneBtns.setAlignment(Pos.CENTER);
 
-        // Place all three VBox sections in a horizontal row (HBox)
-        HBox lists = new HBox(10, todoBox, progressBox, doneBox);
-        lists.setAlignment(Pos.CENTER);
-        lists.setPadding(new Insets(10));
+        // Create column containers
+        VBox todoColumn = new VBox(10, todoHeader, todoList);
+        VBox progressColumn = new VBox(10, progressHeader, inProgressList);
+        VBox doneColumn = new VBox(10, doneHeader, doneList);
 
-        // Buttons at the bottom of the window
-        HBox buttons = new HBox(10, addTodoBtn, moveLeftBtn, moveRightBtn);
-        buttons.setAlignment(Pos.CENTER);
+        todoColumn.setAlignment(Pos.TOP_CENTER);
+        progressColumn.setAlignment(Pos.TOP_CENTER);
+        doneColumn.setAlignment(Pos.TOP_CENTER);
 
-        // Root layout containing everything
-        VBox root = new VBox(10, lists, buttons);
-        root.setPadding(new Insets(15));
+        // Create main content area with columns and buttons
+        HBox mainContent = new HBox(15);
+        mainContent.getChildren().addAll(
+                todoColumn,
+                todoToProgressBtns,
+                progressColumn,
+                progressToDoneBtns,
+                doneColumn
+        );
+        mainContent.setAlignment(Pos.CENTER);
+        mainContent.setPadding(new Insets(20, 20, 10, 20));
 
-        // Create the scene and set it on the stage
-        Scene scene = new Scene(root, 700, 400);
+        // Create buttons at bottom
+        Button createNewBtn = new Button("Create new ToDo");
+        Button deleteBtn = new Button("Delete");
+        createNewBtn.setPrefSize(150, 30);
+        deleteBtn.setPrefSize(100, 30);
+        HBox bottomBox = new HBox(10, createNewBtn, deleteBtn);
+        bottomBox.setAlignment(Pos.CENTER);
+        bottomBox.setPadding(new Insets(10));
+
+        // Main layout
+        BorderPane root = new BorderPane();
+        root.setCenter(mainContent);
+        root.setBottom(bottomBox);
+        root.setStyle("-fx-background-color: #f0f0f0;");
+
+        // Button actions
+        moveToProgressBtn.setOnAction(e -> moveItem(todoList, todos, inProgress));
+        moveBackToTodoBtn.setOnAction(e -> moveItem(inProgressList, inProgress, todos));
+        moveToDoneBtn.setOnAction(e -> moveItem(inProgressList, inProgress, done));
+        moveBackToProgressBtn.setOnAction(e -> moveItem(doneList, done, inProgress));
+        createNewBtn.setOnAction(e -> createNewTodo());
+        deleteBtn.setOnAction(e -> deleteSelectedItem());
+
+        Scene scene = new Scene(root, 700, 450);
         primaryStage.setScene(scene);
-        primaryStage.show(); // Display the window
+        primaryStage.show();
     }
 
-    // Add a new Todo item
-    private void addTodo() {
+    private void moveItem(ListView<String> fromList, ObservableList<String> fromData, ObservableList<String> toData) {
+        String selected = fromList.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            fromData.remove(selected);
+            toData.add(selected);
+        }
+    }
+
+    private void createNewTodo() {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("New Todo");
-        dialog.setHeaderText("Add a new todo");
+        dialog.setHeaderText("Create a new todo");
         dialog.setContentText("Todo text:");
 
-        // If user enters text and clicks OK
         dialog.showAndWait().ifPresent(todo -> {
             if (!todo.trim().isEmpty()) {
                 todos.add(todo.trim());
@@ -96,35 +136,17 @@ public class TodoApp extends Application {
         });
     }
 
-    // Move the selected item forward
-    private void moveRight() {
+    private void deleteSelectedItem() {
+        // Check which list has a selected item and delete it
         if (todoList.getSelectionModel().getSelectedItem() != null) {
-
-            // Move item from Todos → In Progress
-            String item = todoList.getSelectionModel().getSelectedItem();
-            todos.remove(item);
-            inProgress.add(item);
+            String selected = todoList.getSelectionModel().getSelectedItem();
+            todos.remove(selected);
         } else if (inProgressList.getSelectionModel().getSelectedItem() != null) {
-            // Move item from In Progress → Done
-            String item = inProgressList.getSelectionModel().getSelectedItem();
-            inProgress.remove(item);
-            done.add(item);
-        }
-    }
-
-    // Move the selected item backward
-    private void moveLeft() {
-        if (doneList.getSelectionModel().getSelectedItem() != null) {
-
-            // Move item from Done → In Progress
-            String item = doneList.getSelectionModel().getSelectedItem();
-            done.remove(item);
-            inProgress.add(item);
-        } else if (inProgressList.getSelectionModel().getSelectedItem() != null) {
-            // Move item from In Progress → Todos
-            String item = inProgressList.getSelectionModel().getSelectedItem();
-            inProgress.remove(item);
-            todos.add(item);
+            String selected = inProgressList.getSelectionModel().getSelectedItem();
+            inProgress.remove(selected);
+        } else if (doneList.getSelectionModel().getSelectedItem() != null) {
+            String selected = doneList.getSelectionModel().getSelectedItem();
+            done.remove(selected);
         }
     }
 }
